@@ -1,2 +1,8 @@
 *.pkl
 *.pyc
+models/*
+*.DS_Store
+change_log.txt
+recomms/*
+data/*
+

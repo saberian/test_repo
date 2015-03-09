@@ -12,11 +12,7 @@ WEEK_DAYS = 5
 MONTH_DAYS = 20
 YEAR_DAYS = 240
 SMALL_NUM = 0.0001
-PROFIT_MARGIN = 1.05;
-
-
-
-
+#PROFIT_MARGIN = 1.05;
 
 def mean(in_list):
     if len(in_list) == 0:
@@ -24,7 +20,6 @@ def mean(in_list):
     return sum(in_list)/len(in_list)
 
 def getLinearCoeff(my_list, d, n):
-    #my_list = [float(x) for x in t_list]
     my_list = my_list[max(0, d-n):d]
     if len(my_list) == 0:
         return 0
@@ -107,115 +102,16 @@ def getAllStat(price_list, d):
 
 def getLabel(price_list, d):
     current_price = price_list[d]
-    temp_label = -np.ones((3))
+    temp_label = np.zeros((3))
     next_day_price_ratio = price_list[d+1] / current_price
     next_week_max_price_ratio = max(price_list[d+1:d+5]) / current_price
     next_month_max_price_ratio = max(price_list[d+1:d+20]) / current_price
-    #print "next_day_price_ratio:" +str(next_day_price_ratio)
-    #print "next_week_max_price_ratio:" +str(next_week_max_price_ratio)
-    #print "next_month_max_price_ratio:" +str(next_month_max_price_ratio)
-    #print current_price
-    #print price_list[d+1:d+20]
-    if (next_day_price_ratio > PROFIT_MARGIN):
-        temp_label[0] = 1;
-    if (next_week_max_price_ratio > PROFIT_MARGIN):
-        temp_label[1] = 1;
-    if (next_month_max_price_ratio > PROFIT_MARGIN):
-        temp_label[2] = 1;
+
+    temp_label[0] = next_day_price_ratio
+    temp_label[1] = next_week_max_price_ratio
+    temp_label[2] = next_month_max_price_ratio
+
     return temp_label
-
-def getStockFeatureForDay(share_list, ret_label, print_opt):
-    data = np.array([])
-    labels = np.array([])
-    if len(share_list) == 0:
-        return data, labels
-    if 'Close' not in share_list[0]:
-        return data, labels
-    n_days = len(share_list)
-    if  n_days < (YEAR_DAYS+MONTH_DAYS+1):
-        return data, labels
-    if ret_label:
-        ### getting range of valid days
-        x_min = min(YEAR_DAYS, n_days)
-        x_max = max(0, n_days-MONTH_DAYS)
-        days = xrange(x_min, x_max);
-    else:
-        days = [n_days-1]
-
-    ### get price history
-    close_price = []
-    open_price = []
-    high_price = []
-    low_price = []
-    volume = []
-    for share in share_list:
-        try:
-            close_price.append(float(share['Close']))
-            open_price.append(float(share['Open']))
-            high_price.append(float(share['High']))
-            low_price.append(float(share['Low']))
-            volume.append(float(share['Volume']))
-        except Exception, e:
-            return data, labels 
-
-    ### reverse the order of lists
-
-    if np.min(close_price) < 0.01:
-        return data, labels
-
-    close_price = np.array(close_price[::-1])
-    open_price = np.array(open_price[::-1])
-    high_price = np.array(high_price[::-1])
-    low_price = np.array(low_price[::-1])
-    volume = np.array(volume[::-1])
-
-    max_daily_change = (high_price - low_price) / close_price
-    daily_change = (close_price - open_price) / close_price
-
-    ### get features per day
-    for d in days:
-        #print "day is: " + str(d)
-        current_price = close_price[d] + SMALL_NUM;
-        f1 = getAllStat(close_price, d)
-        f2 = getAllStat(daily_change, d)
-        f3 = getAllStat(max_daily_change, d)
-        f4 = getAllStat(volume, d)
-        f_all = np.hstack((f1,f2,f3, f4))
-        if data.shape[0] == 0:
-            data = np.zeros((1, len(f_all)))
-            data[0,:] = f_all 
-        else:
-            data = np.vstack((data, f_all ))
-        ### get label for the instance if needed
-        if ret_label:
-            temp_lab = np.array([getLabel(close_price, d)])#
-            if labels.shape[0] == 0:
-                labels = temp_lab
-            else:
-                labels = np.vstack((labels, temp_lab))
-    #####
-    if print_opt:
-        plt.plot(close_price, label="close_price")
-        #plt.plot(daily_change, label="daily_change")
-        #plt.plot(max_daily_change, label="max_daily_change")
-        plt.grid()
-        #plt.legend()
-        #plt.draw()
-        plt.show()
-    return data, labels
-
-
-
-'''def downloadStockData(sym, start_day, end_day):
-    r = yf.Share(sym)
-    fname = '../historicDataNew/' + sym + '.pkl'
-    if not os.path.isfile(fname):      
-        dl = r.get_historical(start_day, end_day)
-        pickle.dump(dl, open(fname, "wb"))
-    else:
-        dl = pickle.load(open(fname, "rb"))
-    return dl
-    '''
 
 def getStockFeatureForSymbol(share_list, ret_label, sym_data):
     if len(share_list) == 0:
@@ -308,13 +204,3 @@ def writeLogSummary(new_event):
     f = open("../change_log.txt", "append")
     f.write(ct + ": " + new_event + "\n")
     f.close()
-
-
-
-
-
-
-
-
-
-
