@@ -6,13 +6,130 @@ import pickle
 import yahoo_finance as yf
 from time import strftime
 import datetime
+import os
+from matplotlib import finance
+from datetime import datetime
+from matplotlib.dates import date2num
 
 
 WEEK_DAYS = 5
 MONTH_DAYS = 20
 YEAR_DAYS = 240
 SMALL_NUM = 0.0001
+MILL = 1000000
 #PROFIT_MARGIN = 1.05;
+raw_data_loc = "../data/historicData"
+
+
+def plotCandleStick(ax, sym, date_list, open_price, close_price,\
+                    high_price, low_price, n_days, cap):
+    price_info = []
+    len_list = len(date_list) - 1
+    for k in xrange(0, n_days):
+        i = len_list - k
+        date = date2num(datetime.strptime(date_list[i], "%Y-%m-%d"))
+        t = (date, open_price[i], close_price[i],\
+                    high_price[i], low_price[i])
+        price_info.append(t)
+
+    finance.candlestick(ax, price_info, width=0.2, colorup='r', colordown='k', alpha=1.0)
+    ax.grid()
+    ax.set_xticklabels([])
+    ax.set_ylabel(cap)
+
+def getAllNumbers(share_list):
+    date_list = []
+    close_price = []
+    open_price = []
+    high_price = []
+    low_price = []
+    volume = []
+    for share in share_list:
+        try:
+            date_list.append(share['Date'])
+            close_price.append(float(share['Close']))
+            open_price.append(float(share['Open']))
+            high_price.append(float(share['High']))
+            low_price.append(float(share['Low']))
+            volume.append(float(share['Volume']))
+        except Exception, e:
+            print "error"
+
+    date_list = date_list[::-1]
+    close_price = np.array(close_price[::-1])
+    open_price = np.array(open_price[::-1])
+    high_price = np.array(high_price[::-1])
+    low_price = np.array(low_price[::-1])
+    volume = np.array(volume[::-1])
+    return date_list, close_price, open_price,high_price, low_price, volume
+
+def plotDetails(ax, input_y, input_x, n_days, cap):
+    data = input_y[-n_days:]
+    labs = input_x[-n_days:]
+    x = np.arange(0, len(data))
+    #plt.xticks(x, labs)
+    #locs, labels = plt.xticks()
+    #plt.setp(labels, rotation=45)
+    ax.plot(data, label=cap)
+    ax.set_xticklabels([])
+    ax.grid()
+
+def generateReports(sym, loc, score):
+    if not os.path.isdir(loc):
+        os.mkdir(loc)
+    full_name =  raw_data_loc + '/' + sym +'.pkl'
+    dl = pickle.load(open(full_name, "rb"))
+    current_price = float(dl[0]['Close'])
+    current_volume = float(dl[0]['Volume'])/MILL
+    yahoo_1y_est = getYahoo1Yst(sym)
+
+    date_list, close_price, open_price, high_price, low_price, volume = getAllNumbers(dl)
+
+    plt_title = (" score: %.2f" % score) + \
+                (" volume: %.2f" % current_volume) + \
+                (" target price: %.2f" % yahoo_1y_est)
+                #(" cu price: %.2f" % current_price) + \
+
+    plt.figure(figsize=(25,20))
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 2, sharey='row', figsize=(15,10))
+    fig.suptitle(plt_title, fontsize=14)
+
+    plotCandleStick(ax1[0], sym, date_list, open_price, close_price,\
+                     high_price, low_price, 2*WEEK_DAYS,  "last 2 week")
+    plotCandleStick(ax2[0], sym, date_list, open_price, close_price, \
+                     high_price, low_price, MONTH_DAYS, "last month")
+    plotCandleStick(ax3[0], sym, date_list, open_price, close_price, \
+                     high_price, low_price, 6*MONTH_DAYS, "last 6 month")
+    plotCandleStick(ax4[0], sym, date_list, open_price, close_price, \
+                     high_price, low_price, YEAR_DAYS, "last year")
+    
+    plotDetails(ax1[1], close_price, date_list, 2*WEEK_DAYS, "last week")
+    plotDetails(ax2[1], close_price, date_list, MONTH_DAYS, "last month")
+    plotDetails(ax3[1], close_price, date_list, 6*MONTH_DAYS, "last 6 month")
+    plotDetails(ax4[1], close_price, date_list, YEAR_DAYS , "last year")
+
+    plt.draw()
+    plt.savefig(loc + ("/%.3f" % score) + "_" + sym + "_report.png")
+
+def getYahoo1Yst(sym):
+    est = 0
+    url = "http://finance.yahoo.com/echarts?s=" + sym
+    file_name  = "temp_" + sym
+    os.system("wget -O " + file_name + " " + url)
+    f= open(file_name)
+    phrase = "1Y Target Est"
+    lines = f.read().splitlines()
+
+    for i in xrange(0, len(lines)):
+        if phrase in lines[i]: 
+            #print lines[i]
+            #print lines[i+1]
+            ws = lines[i+1].split(">")[1]
+            est = float(ws[:-3])
+            #print est
+            break
+    os.system("rm " + file_name)
+    return est
 
 def mean(in_list):
     if len(in_list) == 0:
