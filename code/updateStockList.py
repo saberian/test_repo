@@ -1,14 +1,13 @@
 import os
 import sys 
 import stockRecommendationLib as srl
+from constants import *
 
 
 url = "ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt"
-
-os.system("wget ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt")
-
+os.system("wget ftp://ftp.nasdaqtrader.com/SymbolDirectory/nasdaqlisted.txt   >/dev/null 2>&1 ")
 f = open("nasdaqlisted.txt", "r")
-f_out = open("../data/stock_list.txt", "w")
+f_out = open(DATA_DIR + "/stock_list.txt", "w")
 # get rid of firt line
 l = f.readline()
 cnt = 0

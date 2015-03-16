@@ -7,6 +7,8 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import datetime
 import sys
+from constants import *
+
 
 def visualizeGbdtIterError(clf, clf_name, train_data, train_label, \
                         test_data, test_label):
@@ -30,13 +32,13 @@ def visualizeGbdtIterError(clf, clf_name, train_data, train_label, \
     plt.draw()
     plt.ylabel('error rate')
     plt.xlabel('num of weak learners')
-    plt.savefig("../models/"+ model_dir_name + "/iter_evolution.png")
+    plt.savefig(MODELS_DIR + "/"+ model_dir_name + "/iter_evolution.png")
 
 
 def testGbdtClassifier(clf, test_data, test_label, name):
     n_test_samples = test_data.shape[0]
     rg_test =  sum(test_label==0) / float(n_test_samples)
-    model_dir =  "../models/" + name
+    model_dir =  MODELS_DIR + "/" + name
     f_out=open(model_dir + "/stats.txt", "a")
     log_str = "num test sample: " + str(n_test_samples)
     print log_str
@@ -53,7 +55,7 @@ def testGbdtClassifier(clf, test_data, test_label, name):
 def trainGbdtClassifier(train_data, train_label, name):
     print "============================"
     print "training classifier " + name
-    model_dir =  "../models/" + name
+    model_dir =  MODELS_DIR + "/" + name
     if not os.path.exists(model_dir):
         os.system("mkdir " + model_dir)
     f_out=open(model_dir + "/stats.txt", "a")
@@ -81,36 +83,24 @@ def trainGbdtClassifier(train_data, train_label, name):
 
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "training classifiers"
-today = sys.argv[1]
-train_data, train_label, \
-            test_data, test_label, \
-            extra_train_data, extra_train_label =\
-            pickle.load(open("../data/processedData/train_data_" + today + ".pkl", "rb"))
+data_name = sys.argv[1]
+test_flag = int(sys.argv[2])
 
+if test_flag == 1:
+    train_data, train_label, test_data, test_label =\
+            pickle.load(open(PROCESSED_DATA_DIR + "/" + data_name + ".pkl", "rb"))
+if test_flag == 0:
+    train_data, train_label =\
+            pickle.load(open(PROCESSED_DATA_DIR + "/" + data_name + ".pkl", "rb"))
 
 ### convert ratio's into labels
-PROFIT_MARGIN = 1.05;
-
-
 train_label = (train_label>PROFIT_MARGIN) + 0.0
-test_label = (test_label>PROFIT_MARGIN) + 0.0
-extra_train_label = (extra_train_label>PROFIT_MARGIN) + 0.0
 
-
-
-model_dir_name = "gbdt_month_test_" + today
+model_dir_name = "gbdt_month_" + data_name
 clf_test_month = trainGbdtClassifier(train_data, train_label[:,2], model_dir_name)
-testGbdtClassifier(clf_test_month, test_data, test_label[:,2], model_dir_name)
-visualizeGbdtIterError(clf_test_month, model_dir_name, train_data, train_label[:,2], \
-                        test_data, test_label[:,2])
 
-
-
-
-
-full_train_data = np.vstack((train_data, extra_train_data))
-full_train_label = np.vstack((train_label, extra_train_label))
-model_dir_name = "gbdt_month_full_" + today
-clf_full_month = trainGbdtClassifier(full_train_data, full_train_label[:,2], model_dir_name)
-
-
+if test_flag == 1:
+    test_label = (test_label>PROFIT_MARGIN) + 0.0
+    testGbdtClassifier(clf_test_month, test_data, test_label[:,2], model_dir_name)
+    visualizeGbdtIterError(clf_test_month, model_dir_name, train_data, train_label[:,2], \
+                            test_data, test_label[:,2])

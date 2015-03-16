@@ -7,38 +7,36 @@ from datetime import date, timedelta
 import stockRecommendationLib as srl
 import datetime
 import sys
-
+from constants import *
 
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "updating historic data files"
 
+target_day = sys.argv[1]
+start_ind = int(sys.argv[2])
+end_ind = int(sys.argv[3])
 
-t=time.strptime(sys.argv[1],'%Y-%m-%d')
-today =date(t.tm_year,t.tm_mon,t.tm_mday)
-
-sym_list = open("../data/stock_list.txt").read().splitlines() 
-#sym_list = sym_list[0::400]
-
-###### get hitoric data ##############
-START_DATE = '2010-01-01'
-data_path = "../data/historicData"
+target_date = srl.convertDay2Date(target_day)
+sym_list = srl.getStockList()
 
 cnt = 0
 n_new_files = 0
 n_updated_file = 0
 n_up_to_date_file = 0
-for sym in sym_list:
+for i in xrange(start_ind, end_ind):
+    sym = sym_list[i]
+    #print sym
     sys.stdout.write('.')
     sys.stdout.flush()
     #print sym + " " + str(cnt) + " out of " + str(len(sym_list))
     cnt = cnt + 1
-    fname = data_path + "/" + sym + '.pkl'
+    fname = HISTORIC_DATA_LOC + "/" + sym + '.pkl'
     try:
         r = yf.Share(sym)
     except Exception, e:
         continue
     if not os.path.isfile(fname):
-        dl = r.get_historical(START_DATE, str(today))
+        dl = r.get_historical(START_DATE, str(target_date))
         pickle.dump(dl, open(fname, "wb"))
         n_new_files += 1
     else:
@@ -47,14 +45,12 @@ for sym in sym_list:
             continue
         if 'Date' not in dl[0]:
             continue
-        t=time.strptime(dl[0]['Date'],'%Y-%m-%d')
-        last_date =date(t.tm_year,t.tm_mon,t.tm_mday) #+timedelta(1)
+        last_date = srl.convertDay2Date(dl[0]['Date'])
         #print last_date
-        if today > last_date:
+        if target_date > last_date:
             #print "updating"
-            new_dl = r.get_historical(str(last_date), str(today))
+            new_dl = r.get_historical(str(last_date), str(target_date))
             new_dl = new_dl[:-1]
-            #print new_dl
             new_dl = new_dl + dl
             pickle.dump(new_dl, open(fname, "wb"))
             n_updated_file +=1

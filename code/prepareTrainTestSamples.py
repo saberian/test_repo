@@ -6,68 +6,42 @@ import pickle
 import stockRecommendationLib as srl
 import datetime
 import sys
+from datetime import date, timedelta
+from constants import *
 
-
-MONTH_DAYS = 20
 
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "collecting training example"
 
+current_db_day = sys.argv[1]
+ratio = 0.8
 
-print "loading database"
-today = sys.argv[1]
-database = pickle.load(open("../data/processedData/database_" + today + ".pkl", "rb"))
+stock_list = srl.getStockList()
+date_list = srl.getWorkingDayList()
+n_labeled_days = len(date_list) - MONTH_DAYS;
 
-print "started to collect examples"
+sp_ind = int(ratio*n_labeled_days)
+train_start_date = srl.convertDay2Date(date_list[0])
+train_end_date = srl.convertDay2Date(date_list[sp_ind])
 
-train_data = np.array([])
-train_label = np.array([])
+test_start_date = srl.convertDay2Date(date_list[sp_ind+1])
+test_end_date = srl.convertDay2Date(date_list[n_labeled_days])
 
-test_data = np.array([])
-test_label = np.array([])
+print "started to collect training examples"
+train_data, train_label = srl.getDatasetFromList(stock_list,\
+                                             train_start_date, train_end_date, current_db_day)
 
-extra_train_data = np.array([])
-extra_train_label = np.array([])
+print "started to collect test examples"
+test_data, test_label = srl.getDatasetFromList(stock_list, \
+                                           test_start_date, test_end_date, current_db_day)
 
-cnt = 0
-for sym in database:
-    #print sym
-    sys.stdout.write('.')
-    sys.stdout.flush()
 
-    td, tl = srl.getMatrixFromDatabse(database[sym])
-    if len(td.shape) == 1:
-        continue
-    if td.shape[0] < (MONTH_DAYS+1):
-        continue
-    if cnt == 0:
-        extra_train_data = td[-MONTH_DAYS:,:]
-        extra_train_label = tl[-MONTH_DAYS:,:]
-        train_data = td[0:-MONTH_DAYS,:]
-        train_label = tl[0:-MONTH_DAYS,:]
-        test_data = td[-1,:]
-        test_label = tl[-1,:]
-    else:
-        extra_train_data = np.vstack((extra_train_data, td[-MONTH_DAYS:,:]))
-        extra_train_label = np.vstack((extra_train_label, tl[-MONTH_DAYS:,:]))
-        train_data = np.vstack((train_data, td[0:-MONTH_DAYS,:]))
-        train_label = np.vstack((train_label, tl[0:-MONTH_DAYS,:]))
-        test_data = np.vstack((test_data, td[-1,:]))
-        test_label = np.vstack((test_label, tl[-1,:]))
-    #print str(cnt) + " out of " + str(len(database))
-    cnt = cnt + 1
-    #if cnt > 10:
-        #break
+pickle.dump([train_data, train_label, test_data, test_label], \
+             open(PROCESSED_DATA_DIR + "/dataset_eval_" + current_db_day + ".pkl", "wb"))
 
-sys.stdout.write('\n')
-pickle.dump([train_data, train_label, \
-            test_data, test_label, \
-            extra_train_data, extra_train_label\
-            ], open("../data/processedData/train_data_" + today + ".pkl", "wb"))
+n_total = train_data.shape[0] + test_data.shape[0] 
 
-n_total = train_data.shape[0] + test_data.shape[0] + extra_train_data.shape[0]
-
-log_str = "train_data_" + today + " with total sample of " + str(n_total) + " is created"
+log_str = "data_eval_" + current_db_day  + " with %d training example and %d test examples is created" % (train_data.shape[0], test_data.shape[0])
 print log_str
 srl.writeLogSummary(log_str)
 

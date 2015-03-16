@@ -7,35 +7,33 @@ import stockRecommendationLib as srl
 from sklearn.ensemble import GradientBoostingClassifier
 import datetime
 import sys
+from constants import *
 
 
-MILL = 1000000
-
-
-data_date = sys.argv[1]
-classifier_date = sys.argv[2]
-
-#today = str(datetime.date.today())
 max_price = 10
 min_price = 1
 min_vol = 1  # in millions
 n_recomms = 10
 
+data_date = sys.argv[1]
+clf_name =  sys.argv[2]
+
+
+
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "get recommendations for " + data_date
 
-raw_data_loc = "../data/historicData";
-res_loc = "../recomms/"+data_date;
+
+res_loc = RECOMMS_DIR + "/" +data_date;
 if not os.path.isdir(res_loc):
     os.mkdir(res_loc)
 
 f_out = open(res_loc + "/recomms.txt", "w")
 
-f_name = "today_sample_" + data_date
-today_data, data_sym_list = pickle.load(open("../data/processedData/"+ f_name + ".pkl", "rb"))
+f_name = "day_sample_" + data_date
+today_data, data_sym_list = pickle.load(open(PROCESSED_DATA_DIR  + "/"+ f_name + ".pkl", "rb"))
 
-clf_name = "gbdt_month_full_" + classifier_date
-clf = pickle.load(open("../models/" + clf_name +"/model.pkl", "rb"))
+clf = pickle.load(open(MODELS_DIR + "/" + clf_name +"/model.pkl", "rb"))
 
 goodness_score = clf.predict_proba(today_data)[:,1]
 
@@ -47,15 +45,18 @@ i = 0
 while (cnt < n_recomms) and (i < len(ind)):
     t = ind[i]
     sym = data_sym_list[t]
-    full_name =  raw_data_loc + '/' + sym +'.pkl'
+    full_name =  HISTORIC_DATA_LOC + '/' + sym +'.pkl'
     dl = pickle.load(open(full_name, "rb"))
     current_price = float(dl[0]['Close'])
-    current_volume = float(dl[0]['Volume'])/MILL
+    current_volume = float(dl[0]['Volume'])/ MILL
     if current_price < 10 and current_price > 1 and current_volume > 1:
         srl.generateReports(sym, res_loc, goodness_score[t])
-        f_out.write("stock: " + sym + (" score: %.3f" % goodness_score[t]) + \
+        log_str = "stock: " + sym + (" score: %.3f" % goodness_score[t]) + \
              " cu price: " + str(current_price) +\
-              (" current_volume: %.3f" % current_volume)+ (" target price: %f" % srl.getYahoo1Yst(sym))+"\n")
+              (" current_volume: %.3f" % current_volume)+ \
+              (" target price: %.2f" % srl.getYahoo1Yst(sym))
+        print log_str
+        f_out.write(log_str+"\n")
         cnt = cnt + 1
     i = i + 1
 

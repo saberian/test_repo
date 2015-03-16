@@ -7,14 +7,14 @@ import stockRecommendationLib as srl
 from sklearn.ensemble import GradientBoostingClassifier
 import datetime
 import sys
+from constants import *
+
 
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "getting data samples for today"
-raw_data_loc = "../data/historicData";
 today = sys.argv[1]
 
-stock_list = open("../data/stock_list.txt").read().splitlines() 
-#stock_list = stock_list[0::400]
+stock_list = srl.getStockList()
 
 data_sym_list =[];
 cnt = 0;
@@ -24,12 +24,12 @@ for sym in stock_list:
     cnt = cnt + 1
     sys.stdout.write('.')
     sys.stdout.flush()
-    #print sym + " : " + str(cnt) + " out of " + str(len(stock_list))
-    full_name =  raw_data_loc + '/' + sym + ".pkl"
+    full_name =  HISTORIC_DATA_LOC + '/' + sym + ".pkl"
     dl = pickle.load(open(full_name, "rb"))
     if len(dl) > 0:
         if 'Date' in dl[0]:
             last_day = dl[0]['Date']
+            #print last_day
             if last_day == today:
                 sym_data = srl.getStockFeatureForSymbol(dl, False, {})
                 if len(sym_data) == 0:
@@ -43,16 +43,15 @@ for sym in stock_list:
                     #print "IS NAN"
                     break
                 if len(train_data) == 0:
-                    train_data = td#np.zeros((1, len(td)))
-                    #train_data[0,:] = td
+                    train_data = td
                 else:
                     train_data = np.vstack((train_data, td))
                 data_sym_list.append(sym)
 
 sys.stdout.write('\n')
-f_name = "today_sample_" + today
+f_name = "day_sample_" + today
 pickle.dump([train_data, data_sym_list], \
-    open("../data/processedData/"+ f_name + ".pkl", "wb"))
+    open(PROCESSED_DATA_DIR + "/"+ f_name + ".pkl", "wb"))
 
 log_str = f_name + " is created with " + str(train_data.shape[0]) + " samples"
 print log_str

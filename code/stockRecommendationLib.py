@@ -6,20 +6,14 @@ import pickle
 import yahoo_finance as yf
 from time import strftime
 import datetime
+import time
+from datetime import date, timedelta
 import os
 from matplotlib import finance
 from datetime import datetime
 from matplotlib.dates import date2num
-
-
-WEEK_DAYS = 5
-MONTH_DAYS = 20
-YEAR_DAYS = 240
-SMALL_NUM = 0.0001
-MILL = 1000000
-#PROFIT_MARGIN = 1.05;
-raw_data_loc = "../data/historicData"
-
+import sys
+from constants import *
 
 def plotCandleStick(ax, sym, date_list, open_price, close_price,\
                     high_price, low_price, n_days, cap):
@@ -77,7 +71,7 @@ def plotDetails(ax, input_y, input_x, n_days, cap):
 def generateReports(sym, loc, score):
     if not os.path.isdir(loc):
         os.mkdir(loc)
-    full_name =  raw_data_loc + '/' + sym +'.pkl'
+    full_name =  HISTORIC_DATA_LOC + '/' + sym +'.pkl'
     dl = pickle.load(open(full_name, "rb"))
     current_price = float(dl[0]['Close'])
     current_volume = float(dl[0]['Volume'])/MILL
@@ -115,7 +109,7 @@ def getYahoo1Yst(sym):
     est = 0
     url = "http://finance.yahoo.com/echarts?s=" + sym
     file_name  = "temp_" + sym
-    os.system("wget -O " + file_name + " " + url)
+    res = os.system("wget -O " + file_name + " " + url + "  >/dev/null 2>&1 ")
     f= open(file_name)
     phrase = "1Y Target Est"
     lines = f.read().splitlines()
@@ -297,16 +291,23 @@ def getStockFeatureForSymbol(share_list, ret_label, sym_data):
     return sym_data
 
 
-def getMatrixFromDatabse(data_points):
+def getMatrixFromDatabase(data_points, start_date, end_date):
     data = np.array([])
     labels = np.array([])
-
     sorted_days = sorted(data_points.keys())
-    for day in sorted_days:
+    start_ind = 0
+    #print start_date
+    if start_date in sorted_days:
+        start_ind = sorted_days.index(start_date)
+    end_ind = len(sorted_days)
+    if end_date in sorted_days:
+        end_ind = sorted_days.index(end_date)
+
+    for i in xrange(start_ind, end_ind):
+        day = sorted_days[i]
         f_all = data_points[day][0]
         lab = data_points[day][1]
         if data.shape[0] == 0:
-            #data = np.zeros((1, len(f_all)))
             data = f_all 
         else:
             data = np.vstack((data, f_all ))
@@ -315,6 +316,60 @@ def getMatrixFromDatabse(data_points):
         else:
             labels = np.vstack((labels, lab))
     return data, labels
+
+def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
+    print "getting data from " + str(start_date) + " to " + str(end_date)
+    train_data = np.array([])
+    train_label = np.array([])
+    cnt = 0
+    for sym in stock_list:
+        #print sym
+        sys.stdout.write('.')
+        sys.stdout.flush()
+        f_name = DATABASE_DIR + "/" + sym + "_" + current_db_day + ".pkl"
+        if not os.path.isfile(f_name):
+            continue
+        datapoints = pickle.load(open(f_name, "r"))
+
+        td, tl = getMatrixFromDatabase(datapoints, str(start_date), str(end_date))
+        #print td.shape
+        if len(td.shape) == 1:
+            continue
+
+        if cnt == 0:
+            train_data = td
+            train_label = tl
+        else:
+            train_data = np.vstack((train_data, td))
+            train_label = np.vstack((train_label, tl))
+        cnt = cnt + 1
+    sys.stdout.write('\n')
+    return train_data, train_label
+
+def getStockList():
+    stock_list = open("../data/stock_list.txt").read().splitlines()
+    stock_list = stock_list[0::400]
+    return stock_list
+
+def convertDay2Date(day_str):
+    t=time.strptime(day_str,'%Y-%m-%d')
+    return date(t.tm_year,t.tm_mon,t.tm_mday)
+
+def getWorkingDayList():
+    today = date.today()
+    sym = "AAPL"
+    r = yf.Share(sym)
+    fname = HISTORIC_DATA_LOC + "/" + sym + '.pkl'
+    if not os.path.isfile(fname):
+        dl = r.get_historical(START_DATE, str(today))
+        pickle.dump(dl, open(fname, "wb"))
+    else:
+        dl = pickle.load(open(fname, "rb"))
+    date_list = []
+    for share in dl:
+        date_list.append(share['Date'])
+    date_list = date_list[::-1]
+    return date_list
 
 def writeLogSummary(new_event):
     ct = strftime("%Y-%m-%d %H:%M:%S")
