@@ -348,7 +348,7 @@ def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
 
 def getStockList():
     stock_list = open("../data/stock_list.txt").read().splitlines()
-    stock_list = stock_list[0::400]
+    #stock_list = stock_list[0::50]
     return stock_list
 
 def convertDay2Date(day_str):
