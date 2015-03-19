@@ -104,6 +104,7 @@ def generateReports(sym, loc, score):
 
     plt.draw()
     plt.savefig(loc + ("/%.3f" % score) + "_" + sym + "_report.png")
+    plt.close()
 
 def getYahoo1Yst(sym):
     est = 0

@@ -1,15 +1,12 @@
 
-last_day="non"
-today="2015-03-11"
-classifier_date="2015-03-09"
-echo $last_day
+today="2015-03-18"
+last_day="2015-03-13"
 LOG_FILE=../change_log.txt
-#echo "============= started a full update cycle========" >>  $LOG_FILE
-#python updateStockList.py
-#python updateHistoricData.py $today
-#python updateDatabase.py  $last_day  $today
-#python prepareTrainTestSamples.py  $today
-#python trainClassifier.py  $today
-#python getTodaySamples.py  $today
-python getTodayRecommendation.py  $today $classifier_date
+echo "============= started a full update cycle========" >>  $LOG_FILE
+python parallelExecuter.py "history" $today 10
+python parallelExecuter.py "database" $today 10 $last_day
+python prepareFullDataset.py  $today
+python trainClassifier.py "dataset_full_"$today 0
+python getDaySamples.py $today
+python getRecommendation.py $today "linear_reg_month_dataset_full_"$today
 echo "============= finished a full update cycle========" >> $LOG_FILE 
