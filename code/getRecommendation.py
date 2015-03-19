@@ -13,7 +13,7 @@ from constants import *
 max_price = 10
 min_price = 1
 min_vol = 1  # in millions
-n_recomms = 10
+n_recomms = 100
 
 data_date = sys.argv[1]
 clf_name =  sys.argv[2]
@@ -35,7 +35,9 @@ today_data, data_sym_list = pickle.load(open(PROCESSED_DATA_DIR  + "/"+ f_name +
 
 clf = pickle.load(open(MODELS_DIR + "/" + clf_name +"/model.pkl", "rb"))
 
-goodness_score = clf.predict_proba(today_data)[:,1]
+#goodness_score = clf.predict_proba(today_data)[:,1]
+goodness_score = clf.decision_function(today_data)
+
 
 ind = np.argsort(-goodness_score)
 #print goodness_score[ind]
