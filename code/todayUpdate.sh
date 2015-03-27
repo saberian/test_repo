@@ -1,6 +1,6 @@
 
-today="2015-03-18"
-last_day="2015-03-13"
+today="2015-03-19"
+last_day="2015-03-18"
 LOG_FILE=../change_log.txt
 echo "============= started a full update cycle========" >>  $LOG_FILE
 python parallelExecuter.py "history" $today 10

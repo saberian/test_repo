@@ -37,7 +37,7 @@ for i in xrange(start_ind, end_ind):
     full_name =  HISTORIC_DATA_LOC + '/' + sym + ".pkl"
     dl = pickle.load(open(full_name, "rb"))
 
-    new_sym_data = srl.getStockFeatureForSymbol(dl, True, current_sym_data)
+    new_sym_data = srl.getStockFeatureForSymbol(dl, True, current_sym_data, 'all')
 
     n_added_entry += (len(new_sym_data) - len_old)
 

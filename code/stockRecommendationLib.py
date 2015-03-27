@@ -75,14 +75,15 @@ def generateReports(sym, loc, score):
     dl = pickle.load(open(full_name, "rb"))
     current_price = float(dl[0]['Close'])
     current_volume = float(dl[0]['Volume'])/MILL
-    yahoo_1y_est = getYahoo1Yst(sym)
+    #yahoo_1y_est = getYahoo1Yst(sym)
 
     date_list, close_price, open_price, high_price, low_price, volume = getAllNumbers(dl)
 
     plt_title = (" score: %.2f" % score) + \
                 (" volume: %.2f" % current_volume) + \
-                (" target price: %.2f" % yahoo_1y_est)
-                #(" cu price: %.2f" % current_price) + \
+                (" cu price: %.2f" % current_price) #+ \
+                #(" target price: %.2f" % yahoo_1y_est)
+
 
     plt.figure(figsize=(25,20))
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 2, sharey='row', figsize=(15,10))
@@ -104,7 +105,7 @@ def generateReports(sym, loc, score):
 
     plt.draw()
     plt.savefig(loc + ("/%.3f" % score) + "_" + sym + "_report.png")
-    plt.close()
+    plt.close('all')
 
 def getYahoo1Yst(sym):
     est = 0
@@ -225,7 +226,7 @@ def getLabel(price_list, d):
 
     return temp_label
 
-def getStockFeatureForSymbol(share_list, ret_label, sym_data):
+def getStockFeatureForSymbol(share_list, ret_label, sym_data, target_day):
     if len(share_list) == 0:
         return sym_data
     if 'Close' not in share_list[0]:
@@ -233,14 +234,6 @@ def getStockFeatureForSymbol(share_list, ret_label, sym_data):
     n_days = len(share_list)
     if  n_days < (YEAR_DAYS+MONTH_DAYS+1):
         return sym_data
-    if ret_label:
-        ### getting range of valid days
-        x_min = min(YEAR_DAYS, n_days)
-        x_max = max(0, n_days-MONTH_DAYS)
-        days = xrange(x_min, x_max);
-    else:
-        days = [n_days-1]
-
     ### get price history
     date_list = []
     close_price = []
@@ -272,6 +265,16 @@ def getStockFeatureForSymbol(share_list, ret_label, sym_data):
 
     max_daily_change = (high_price - low_price) / close_price
     daily_change = (close_price - open_price) / close_price
+
+    if target_day == "all": #ret_label:
+        ### getting range of valid days
+        x_min = min(YEAR_DAYS, n_days)
+        x_max = max(0, n_days-MONTH_DAYS)
+        days = xrange(x_min, x_max);
+    else:
+        days = []
+        if target_day in date_list:
+            days = [date_list.index(target_day)]# [n_days-1]
 
     ### get features per day
     for d in days:
