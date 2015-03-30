@@ -213,6 +213,9 @@ def getAllStat(price_list, d):
     f4 = getMovingMins(price_list, d)
     return np.hstack((f1,f2,f3,f4))
 
+def getRawStat(price_list, d):
+    return price_list[(d-YEAR_DAYS):(d+1)]
+
 def getLabel(price_list, d):
     current_price = price_list[d]
     temp_label = np.zeros((3))
@@ -282,10 +285,14 @@ def getStockFeatureForSymbol(share_list, ret_label, sym_data, target_day):
         current_date = date_list[d]
         if current_date not in sym_data:
             current_price = close_price[d] + SMALL_NUM;
-            f1 = getAllStat(close_price, d)
+            '''f1 = getAllStat(close_price, d)
             f2 = getAllStat(daily_change, d)
             f3 = getAllStat(max_daily_change, d)
-            f4 = getAllStat(volume, d)
+            f4 = getAllStat(volume, d)'''
+            f1 = getRawStat(close_price, d)
+            f2 = getRawStat(daily_change, d)
+            f3 = getRawStat(max_daily_change, d)
+            f4 = getRawStat(volume, d)
             f_all = np.hstack((f1,f2,f3, f4))
             res = f_all
             if ret_label:
@@ -352,7 +359,7 @@ def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
 
 def getStockList():
     stock_list = open("../data/stock_list.txt").read().splitlines()
-    #stock_list = stock_list[0::50]
+    stock_list = stock_list[0::50]
     return stock_list
 
 def convertDay2Date(day_str):
