@@ -214,7 +214,12 @@ def getAllStat(price_list, d):
     return np.hstack((f1,f2,f3,f4))
 
 def getRawStat(price_list, d):
-    return price_list[(d-YEAR_DAYS):(d+1)]
+    temp = price_list[(d-YEAR_DAYS):(d+1)]
+    temp_max = max(temp)
+    if temp_max < 0.01:
+        temp_max = 0.01
+    temp = temp / max(temp)
+    return temp
 
 def getLabel(price_list, d):
     current_price = price_list[d]
