@@ -18,6 +18,9 @@ import sklearn
 import sklearn.datasets
 import sklearn.linear_model
 
+from constants import *
+import pickle
+
 
 def learn_and_test(solver_file):
     caffe.set_mode_cpu()
@@ -33,9 +36,19 @@ def learn_and_test(solver_file):
     return accuracy
 
 
+data_name = 'dataset_eval_2015-03-26'
+train_data, train_label, test_data, test_label =\
+        pickle.load(open(PROCESSED_DATA_DIR + "/" + data_name + ".pkl", "rb"))
+X = train_data
+y = train_label[:,2] - 1
+y = y * (y < 4) + 4 * (y > 4)
+y = y / 4.0
+Xt = test_data
+yt = test_label[:,2] - 1
+yt = yt * (yt < 4) + 4 * (yt > 4)
+yt = yt / 4.0
 
-
-X, y = sklearn.datasets.make_classification(
+'''X, y = sklearn.datasets.make_classification(
     n_samples=10000, n_features=4, n_redundant=0, n_informative=2, 
     n_clusters_per_class=2, hypercube=False, random_state=0
 )
@@ -44,18 +57,33 @@ y = y + 0.5
 
 # Split into train and test
 X, Xt, y, yt = sklearn.cross_validation.train_test_split(X, y)
+'''
 
-# Train and test the scikit-learn SGD logistic regression.
-#clf = sklearn.linear_model.SGDClassifier(
-#    loss='log', n_iter=1000, penalty='l2', alpha=1e-3, class_weight='auto')
+
+print X.shape
+print y.shape
+print [max(y), min(y)]
+print np.max(X)
+print Xt.shape
+print yt.shape
+print [max(yt), min(yt)]
+
+y_mean = np.mean(y)
+x_mean = np.mean(X, axis=0)
+print x_mean.shape
+
+X -= x_mean[np.newaxis,:]
+print X.shape
+Xt -= x_mean[np.newaxis,:]
+
+
+
 clf = sklearn.linear_model.LinearRegression()
-
 clf.fit(X, y)
 yt_pred = clf.predict(Xt)
-#print('Accuracy: {:.3f}'.format(sklearn.metrics.accuracy_score(yt, yt_pred)))
-
-print('Accuracy: {:.3f}'.format(sklearn.metrics.mean_squared_error(yt, yt_pred)))
-
+print('Accuracy: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, yt_pred)))
+print('Accuracy D: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, y_mean + (0 * yt_pred))))
+print('Accuracy 0: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, (0 * yt_pred))))
 
 
 # Write out the data to HDF5 files in a temp directory.
@@ -85,5 +113,5 @@ with open(os.path.join(dirname, 'test.txt'), 'w') as f:
     f.write(test_filename + '\n')
 
 
-acc = learn_and_test('hdf5_classification/solver.prototxt')
-print("Accuracy: {:.3f}".format(acc))
+#acc = learn_and_test('solver.prototxt')
+#print("Accuracy: {:.3f}".format(acc))
