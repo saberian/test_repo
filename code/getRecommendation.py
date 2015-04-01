@@ -30,12 +30,8 @@ def getRecommForDay(day_str, clfr):
         #print sym
         full_name =  HISTORIC_DATA_LOC + '/' + sym +'.pkl'
         dl = pickle.load(open(full_name, "rb"))
-        if 'Close' in dl[0]:
-            current_price = float(dl[0]['Close'])
-            current_volume = float(dl[0]['Volume'])/ MILL
-        else:
-            current_price = float(dl[0]['col6'])
-            current_volume = float(dl[0]['col5'])/ MILL
+        current_price = float(dl[0]['Close'])
+        current_volume = float(dl[0]['Volume'])/ MILL
         if current_price < max_price and current_price > min_price and current_volume > min_vol:
             sym_list.append(sym)
             sys.stdout.write('.')
