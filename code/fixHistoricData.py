@@ -11,13 +11,15 @@ from constants import *
 
 
 print "++++++++++++++++++++++++++++++++++++++++++"
-target_day = "2015-03-31"#sys.argv[1]
+target_day = "2015-04-01"#sys.argv[1]
 
 stock_list = srl.getStockList()
 
+#stock_list = ["CHEKU", "EOPN","OFS", "PTRY","QPACU","UPI","VIA","VLCCF"]
+
 for sym in stock_list:
-    #sys.stdout.write('.')
-    #sys.stdout.flush()
+    sys.stdout.write('.')
+    sys.stdout.flush()
     full_name =  HISTORIC_DATA_LOC + '/' + sym + ".pkl"
     dl = pickle.load(open(full_name, "rb"))
     if len(dl) == 0:
