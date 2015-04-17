@@ -14,6 +14,28 @@ from datetime import datetime
 from matplotlib.dates import date2num
 import sys
 from constants import *
+caffe_root = '/mnt/ehsan_files/caffe/'
+import sys
+sys.path.insert(0, caffe_root + 'python')
+import caffe
+
+def test_caffe(deploy_file, output_node, cf_model_dir, model_file_name, test_data, norm_flag):
+    caffe.set_mode_gpu()
+    net = caffe.Classifier(deploy_file, cf_model_dir + "/" + model_file_name)
+
+    if norm_flag == 1:
+        x_mean = pickle.load(open(cf_model_dir + "/x_mean.pkl"))
+        test_data -= x_mean[np.newaxis,:]
+
+    n_samples = test_data.shape[0]
+    n_features = test_data.shape[1]
+    res = np.array([])
+    
+    caffe_in = np.zeros((n_samples, 1, n_features, 1))
+    for i in xrange(0, n_samples):
+        caffe_in[i] = test_data[i,:].reshape((1, n_features, 1))
+    res = net.forward_all(**{"data": caffe_in})[output_node].squeeze()
+    return res
 
 def plotCandleStick(ax, sym, date_list, open_price, close_price,\
                     high_price, low_price, n_days, cap):

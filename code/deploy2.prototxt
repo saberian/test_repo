@@ -1,30 +1,9 @@
 name: "LogisticRegressionNet"
-layer {
-  name: "data"
-  type: "HDF5Data"
-  top: "data"
-  top: "label"
-  include {
-    phase: TRAIN
-  }
-  hdf5_data_param {
-    source: "../data/hdf5/train.txt"
-    batch_size: 100
-  }
-}
-layer {
-  name: "data"
-  type: "HDF5Data"
-  top: "data"
-  top: "label"
-  include {
-    phase: TEST
-  }
-  hdf5_data_param {
-    source: "../data/hdf5/test.txt"
-    batch_size: 100
-  }
-}
+input: "data"
+input_dim: 10
+input_dim: 1
+input_dim: 964
+input_dim: 1
 layer {
   name: "fc1"
   type: "InnerProduct"
@@ -42,7 +21,7 @@ layer {
     num_output: 50 
     weight_filler {
       type: "gaussian"
-      std: 0.00001
+      std: 0.01
     }
     bias_filler {
       type: "constant"
@@ -73,28 +52,11 @@ layer {
     num_output: 1
     weight_filler {
       type: "gaussian"
-      std: 0.00001
+      std: 0.01
     }
     bias_filler {
       type: "constant"
       value: 0
     }
-  }
-}
-layer {
-  name: "loss"
-  type: "EuclideanLoss"
-  bottom: "fc2"
-  bottom: "label"
-  top: "loss"
-}
-layer {
-  name: "accuracy"
-  type: "EuclideanLoss"
-  bottom: "fc2"
-  bottom: "label"
-  top: "accuracy"
-  include {
-    phase: TEST
   }
 }
