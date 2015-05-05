@@ -1,4 +1,4 @@
-name: "LogisticRegressionNet"
+name: "RegressionNet"
 input: "data"
 input_dim: 100
 input_dim: 1

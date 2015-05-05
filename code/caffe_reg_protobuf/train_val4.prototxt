@@ -1,4 +1,4 @@
-name: "LogisticRegressionNet"
+name: "cRegressionNet"
 layer {
   name: "data"
   type: "HDF5Data"
@@ -8,8 +8,8 @@ layer {
     phase: TRAIN
   }
   hdf5_data_param {
-    source: "../data/hdf5/train.txt"
-    batch_size: 100
+    source: "../../data/hdf5/train_reg.txt"
+    batch_size: 1000
   }
 }
 layer {
@@ -21,25 +21,25 @@ layer {
     phase: TEST
   }
   hdf5_data_param {
-    source: "../data/hdf5/test.txt"
-    batch_size: 100
+    source: "../../data/hdf5/test_reg.txt"
+    batch_size: 1000
   }
 }
 layer {
-  name: "fc1"
-  type: "InnerProduct"
+  name: "conv1"
+  type: "Convolution"
   bottom: "data"
-  top: "fc1"
+  top: "conv1"
   param {
     lr_mult: 1
-    decay_mult: 1
   }
   param {
     lr_mult: 2
-    decay_mult: 0
   }
-  inner_product_param {
-    num_output: 50 
+  convolution_param {
+    num_output: 32
+    kernel_h: 5
+    kernel_w: 1
     weight_filler {
       type: "gaussian"
       std: 0.00001
@@ -51,16 +51,21 @@ layer {
   }
 }
 layer {
-  name: "relu1"
-  type: "ReLU"
-  bottom: "fc1"
-  top: "fc1"
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_h: 3
+    kernel_w: 1 
+  }
 }
 layer {
-  name: "fc2"
+  name: "fc1"
   type: "InnerProduct"
-  bottom: "fc1"
-  top: "fc2"
+  bottom: "pool1"
+  top: "fc1"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -70,7 +75,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 1
+    num_output: 1 
     weight_filler {
       type: "gaussian"
       std: 0.00001
@@ -84,14 +89,14 @@ layer {
 layer {
   name: "loss"
   type: "EuclideanLoss"
-  bottom: "fc2"
+  bottom: "fc1"
   bottom: "label"
   top: "loss"
 }
 layer {
   name: "accuracy"
   type: "EuclideanLoss"
-  bottom: "fc2"
+  bottom: "fc1"
   bottom: "label"
   top: "accuracy"
   include {
