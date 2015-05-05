@@ -11,15 +11,20 @@ from constants import *
 
 
 
-def getRecommForDay(day_str, clfr):
-    print "processing  " + day_str
+def getRecommForDayCaffe(day_str):
     f_name = "day_sample_" + day_str
     file_loc = PROCESSED_DATA_DIR  + "/"+ f_name + ".pkl"
     if not os.path.isfile(file_loc):
         print "get data for " + day_str
         os.system('python getDaySamples.py ' + day_str)
     day_data, day_sym_list = pickle.load(open(file_loc, "rb"))
-    goodness_score = clf.decision_function(day_data)
+    caffe_res = srl.test_caffe(deploy_file, output_node, cf_model_dir, model_file_name, day_data, 1)
+
+    print caffe_res.shape
+    print day_data.shape
+    print day_sym_list
+
+    goodness_score = caffe_res[:,1]
     ind = np.argsort(-goodness_score)
     cnt = 0
     i = 0
@@ -27,11 +32,14 @@ def getRecommForDay(day_str, clfr):
     while (cnt < n_recomms) and (i < len(ind)):
         t = ind[i]
         sym = day_sym_list[t]
-        #print sym
+        print sym
         full_name =  HISTORIC_DATA_LOC + '/' + sym +'.pkl'
         dl = pickle.load(open(full_name, "rb"))
         current_price = float(dl[0]['Close'])
         current_volume = float(dl[0]['Volume'])/ MILL
+
+        print [current_price, current_volume]
+
         if current_price < max_price and current_price > min_price and current_volume > min_vol:
             sym_list.append(sym)
             sys.stdout.write('.')
@@ -41,21 +49,30 @@ def getRecommForDay(day_str, clfr):
     sys.stdout.write('\n')
     return sym_list
 
-max_price = 10
+
+prd_name = "caffe_clf_v4_week"
+prd_type = "clf"
+protobuf_loc = 'caffe_clf_protobuf'
+prt_name = protobuf_loc + "/train_val4.prototxt"
+deploy_file = protobuf_loc + "/deploy4.prototxt"
+output_node = "fc1"
+batch_size = 100
+n_max_itr = 10000
+model_file_name = prd_name + "_iter_"+  str(n_max_itr) + ".caffemodel"
+cf_model_dir = MODELS_DIR + "/" + prd_name
+
+max_price = 1000
 min_price = 1
-min_vol = 1  # in millions
+min_vol = 0  # in millions
 n_recomms = 30
-n_days_thr = 0.6
-n_days = 6
+n_days_thr = 0 #0.6
+n_days = 1
 
-target_day = sys.argv[1]
-clf_name =  sys.argv[2]
-
-clf = pickle.load(open(MODELS_DIR + "/" + clf_name +"/model.pkl", "rb"))
-
-
+target_day = "2015-04-01"#sys.argv[1]
 print "++++++++++++++++++++++++++++++++++++++++++"
 print "get recommendations for " + target_day
+
+
 
 working_day_list = srl.getWorkingDayList()
 day_ind = working_day_list.index(target_day)
@@ -63,12 +80,16 @@ day_ind = working_day_list.index(target_day)
 res_hist = {}
 for j in xrange(0, n_days):
     temp_day = working_day_list[day_ind-j]
-    temp_list = getRecommForDay(temp_day, clf)
+    print temp_day
+    print "ess"
+    temp_list = getRecommForDayCaffe(temp_day)
     for sym in temp_list:
         if sym in res_hist:
             res_hist[sym] +=1
         else:
             res_hist[sym] = 1
+
+print res_hist
 
 sorted_res = sorted(res_hist.items(), key=lambda x:-x[1])
 
@@ -85,31 +106,3 @@ for sym, h in sorted_res:
 log_str = "recomms for " + target_day + " is created"
 print log_str
 srl.writeLogSummary(log_str)
-
-'''
-
-f_out.write("=======Best==============="+"\n")
-cnt = 0
-i = 0
-while (cnt < n_recomms) and (i < len(ind)):
-    t = ind[i]
-    sym = data_sym_list[t]
-    full_name =  HISTORIC_DATA_LOC + '/' + sym +'.pkl'
-    dl = pickle.load(open(full_name, "rb"))
-    current_price = float(dl[0]['Close'])
-    current_volume = float(dl[0]['Volume'])/ MILL
-    if current_price < 1000 and current_price > 1 and current_volume > 1:
-        srl.generateReports(sym, res_loc, goodness_score[t])
-        log_str = "stock: " + sym + (" score: %.3f" % goodness_score[t]) + \
-             " cu price: " + str(current_price) +\
-              (" current_volume: %.3f" % current_volume) #+ \
-              #(" target price: %.2f" % srl.getYahoo1Yst(sym))
-        print log_str
-        f_out.write(log_str+"\n")
-        cnt = cnt + 1
-    i = i + 1
-
-log_str = "recomms based on " + str(today_data.shape[0]) + " stocks for " + data_date + " is created"
-print log_str
-srl.writeLogSummary(log_str)'''
-

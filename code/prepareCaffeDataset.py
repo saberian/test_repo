@@ -80,10 +80,8 @@ def prepareData(data_name, dim_no, batch_size, cf_model_dir, pr_type):
             pickle.load(open(PROCESSED_DATA_DIR + "/" + data_name + ".pkl", "rb"))
     X = train_data
     y = train_label[:, dim_no] - 1
-    #y = y
     Xt = test_data
     yt = test_label[:, dim_no] - 1
-    #yt = yt
 
     if pr_type == "clf":
         y = y + 1
@@ -100,7 +98,6 @@ def prepareData(data_name, dim_no, batch_size, cf_model_dir, pr_type):
     tt = np.random.permutation(X.shape[0])
     X = X[tt,:]
     y = y[tt]
-
 
     n_batch_train = int(len(y) / batch_size)
     n_used_samples_train = n_batch_train * batch_size
@@ -175,7 +172,6 @@ if prd_type == "clf":
 if prd_type == "reg":
     lr_res = learn_and_test_LR(X, y, Xt, yt)
 
-
 plt.clf()
 test_label = (yt > (PROFIT_MARGIN-1)) + 0
 
@@ -203,11 +199,3 @@ plt.grid()
 plt.draw()
 plt.savefig(cf_model_dir + "/train_loss.png") 
 
-'''
-print('Accuracy Caffe res: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, caffe_res) / 2.0))
-print('Accuracy LR  : {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, yt_pred) / 2.0))
-print('Accuracy Def : {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, np.mean(y) + (0 * yt_pred)) / 2.0 ))
-print('Accuracy Zero: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, (0 * yt_pred)) / 2.0 ))
-print('Accuracy Rand: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, np.random.rand(yt.shape[0], )/ 100.0) / 2.0 ))
-print('Accuracy NRnd: {:.8f}'.format(sklearn.metrics.mean_squared_error(yt, np.random.normal(0, 1, yt.shape[0])) / 2.0 ))
-'''

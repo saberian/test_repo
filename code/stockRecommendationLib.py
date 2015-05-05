@@ -14,7 +14,7 @@ from datetime import datetime
 from matplotlib.dates import date2num
 import sys
 from constants import *
-caffe_root = '/mnt/ehsan_files/caffe/'
+caffe_root = '../../caffe/'
 import sys
 sys.path.insert(0, caffe_root + 'python')
 import caffe
@@ -240,7 +240,7 @@ def getRawStat(price_list, d):
     temp_max = max(temp)
     if temp_max < 0.01:
         temp_max = 0.01
-    temp = temp / max(temp)
+    temp = temp / temp_max
     return temp
 
 def getLabel(price_list, d):
@@ -386,7 +386,7 @@ def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
 
 def getStockList():
     stock_list = open("../data/stock_list.txt").read().splitlines()
-    stock_list = stock_list[0::50]
+    stock_list = stock_list[0::10]
     return stock_list
 
 def convertDay2Date(day_str):
