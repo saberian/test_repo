@@ -9,7 +9,7 @@ layer {
   }
   hdf5_data_param {
     source: "../data/hdf5/train_clf.txt"
-    batch_size: 100
+    batch_size: 1000
   }
 }
 layer {
@@ -22,7 +22,7 @@ layer {
   }
   hdf5_data_param {
     source: "../data/hdf5/test_clf.txt"
-    batch_size: 100
+    batch_size: 1000
   }
 }
 layer {

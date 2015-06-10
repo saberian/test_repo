@@ -1,4 +1,4 @@
-name: "ClassificationNet"
+name: "RegressionNet"
 layer {
   name: "data"
   type: "HDF5Data"
@@ -8,8 +8,8 @@ layer {
     phase: TRAIN
   }
   hdf5_data_param {
-    source: "../data/hdf5/train_clf.txt"
-    batch_size: 100
+    source: "../data/hdf5/train_reg.txt"
+    batch_size: 1000
   }
 }
 layer {
@@ -21,8 +21,8 @@ layer {
     phase: TEST
   }
   hdf5_data_param {
-    source: "../data/hdf5/test_clf.txt"
-    batch_size: 100
+    source: "../data/hdf5/test_reg.txt"
+    batch_size: 1000
   }
 }
 layer {
@@ -39,7 +39,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 2
+    num_output: 1 
     weight_filler {
       type: "gaussian"
       std: 0.00001
@@ -52,14 +52,14 @@ layer {
 }
 layer {
   name: "loss"
-  type: "SoftmaxWithLoss"
+  type: "EuclideanLoss"
   bottom: "fc1"
   bottom: "label"
   top: "loss"
 }
 layer {
   name: "accuracy"
-  type: "Accuracy"
+  type: "EuclideanLoss"
   bottom: "fc1"
   bottom: "label"
   top: "accuracy"

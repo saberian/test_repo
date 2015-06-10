@@ -8,7 +8,7 @@ layer {
     phase: TRAIN
   }
   hdf5_data_param {
-    source: "../../data/hdf5/train_reg.txt"
+    source: "../data/hdf5/train_reg.txt"
     batch_size: 1000
   }
 }
@@ -21,7 +21,7 @@ layer {
     phase: TEST
   }
   hdf5_data_param {
-    source: "../../data/hdf5/test_reg.txt"
+    source: "../data/hdf5/test_reg.txt"
     batch_size: 1000
   }
 }
@@ -37,7 +37,7 @@ layer {
     lr_mult: 2
   }
   convolution_param {
-    num_output: 32
+    num_output: 100
     kernel_h: 5
     kernel_w: 1
     weight_filler {

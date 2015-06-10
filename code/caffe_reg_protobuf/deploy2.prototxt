@@ -1,6 +1,6 @@
 name: "RegressionNet"
 input: "data"
-input_dim: 10
+input_dim: 1000
 input_dim: 1
 input_dim: 964
 input_dim: 1

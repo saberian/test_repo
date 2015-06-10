@@ -18,57 +18,6 @@ caffe_root = '../../caffe/'
 import sys
 sys.path.insert(0, caffe_root + 'python')
 import caffe
-import h5py
-
-
-#################
-HDF5_LOC = "../data/hdf5"
-LABEL_PREIOD = ["day", "week", "month"]
-MAX_RESPONSE = 4
-
-
-
-def testHdf5Caffe(deploy_file, output_node, cf_model_dir, model_file_name, test_file_list, test_file_loc):
-    caffe.set_mode_gpu()
-    net = caffe.Classifier(deploy_file, cf_model_dir + "/" + model_file_name)
-
-    test_data = np.array([])
-    test_label = np.array([])
-
-    test_files_names = open(test_file_loc + "/" + test_file_list).read().splitlines()
-    ns = 0
-    nf = 0
-    for fn in test_files_names:
-        f = h5py.File(fn, 'r')
-        td = np.array(f["data"])
-        tl = np.array(f["label"])
-        ns += td.shape[0]
-        nf = td.shape[2]
-
-    test_data = np.zeros((ns, 1, nf, 1))
-    test_label = np.zeros((ns))
-    cnt = 0
-    for fn in test_files_names:
-        f = h5py.File(fn, 'r')
-        td = np.array(f["data"])
-        tl = np.array(f["label"])
-        ns = td.shape[0]
-        test_data[cnt:(ns+cnt), :, : , :] = td
-        test_label[cnt:(cnt+ns)] = tl
-        cnt += ns
-
-
-    res = np.array([])
-
-    print "created the req files"
-    
-    #caffe_in = np.zeros((n_samples, 1, n_features, 1))
-    #for i in xrange(0, n_samples):
-    #    caffe_in[i] = test_data[i,:].reshape((1, n_features, 1))
-    res = net.forward_all(**{"data": test_data})[output_node].squeeze()
-    return res, test_label
-
-
 
 def test_caffe(deploy_file, output_node, cf_model_dir, model_file_name, test_data, norm_flag):
     caffe.set_mode_gpu()
@@ -216,7 +165,7 @@ def getLinearCoeff(my_list, d, n):
 
 def getAverage(my_list, d, n):
     my_list = my_list[max(0, d-n):d]
-    if len(my_list) < n:
+    if len(my_list) == 0:
         return 0
     return mean(my_list)
 
@@ -381,42 +330,53 @@ def getStockFeatureForSymbol(share_list, ret_label, sym_data, target_day):
 
 
 def getMatrixFromDatabase(data_points, start_date, end_date):
-    data = np.array([])
-    labels = np.array([])
-    day_label = []
     sorted_days = sorted(data_points.keys())
     start_ind = 0
-    #print start_date
     if start_date in sorted_days:
         start_ind = sorted_days.index(start_date)
     end_ind = len(sorted_days)
     if end_date in sorted_days:
         end_ind = sorted_days.index(end_date)
 
+    n_s = 0
+    n_f = 0
+    n_l = 0
     for i in xrange(start_ind, end_ind):
         day = sorted_days[i]
         f_all = data_points[day][0]
         lab = data_points[day][1]
-        if data.shape[0] == 0:
-            data = f_all 
+        n_l = lab.shape[1]
+        if len(f_all.shape) > 1 :
+            n_s = n_s + f_all.shape[0]
+            n_f = f_all.shape[1]
         else:
-            data = np.vstack((data, f_all ))
-        if labels.shape[0] == 0:
-            labels = lab
-        else:
-            labels = np.vstack((labels, lab))
-        for t in xrange(0, len(lab)):
-            day_label += [day]
+            n_s += 1
+            n_f = f_all.shape[0]
+    data = np.zeros((n_s, n_f))
+    label = np.zeros((n_s, n_l))
 
-    return data, labels, day_label
+    cnt = 0
+    for i in xrange(start_ind, end_ind):
+        day = sorted_days[i]
+        f_all = data_points[day][0]
+        lab = data_points[day][1]
+        n2 = f_all.shape[0]
+        data[cnt:cnt+n2, :] = f_all
+        label[cnt:cnt+n2, :] = lab
+        cnt += n2
+    return data, label
 
 def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
     print "getting data from " + str(start_date) + " to " + str(end_date)
-    train_data = np.array([])
-    train_label = np.array([])
     cnt = 0
+
+    temp_list_td = []
+    temp_list_tl = []
+    n_s = 0
+    n_f = 0
+    n_l = 0
+
     for sym in stock_list:
-        #print sym
         sys.stdout.write('.')
         sys.stdout.flush()
         f_name = DATABASE_DIR + "/" + sym + "_" + current_db_day + ".pkl"
@@ -425,23 +385,32 @@ def getDatasetFromList(stock_list, start_date, end_date, current_db_day):
         datapoints = pickle.load(open(f_name, "r"))
 
         td, tl = getMatrixFromDatabase(datapoints, str(start_date), str(end_date))
-        #print td.shape
         if len(td.shape) == 1:
             continue
-
-        if cnt == 0:
-            train_data = td
-            train_label = tl
-        else:
-            train_data = np.vstack((train_data, td))
-            train_label = np.vstack((train_label, tl))
+        temp_list_td.append(td)
+        temp_list_tl.append(tl)
+        n_s += td.shape[0]
+        n_f = td.shape[1]
+        n_l = tl.shape[1]
         cnt = cnt + 1
+
+    print "collected the data"
+
+    train_data = np.zeros((n_s, n_f))
+    train_label = np.zeros((n_s, n_l))
+    cnt = 0
+    for i in xrange(0, len(temp_list_td)):
+        n2 =  temp_list_td[i].shape[0]
+        train_data[cnt:cnt+n2, :] = temp_list_td[i]
+        train_label[cnt:cnt+n2, :] = temp_list_tl[i]
+        cnt += n2
+
     sys.stdout.write('\n')
     return train_data, train_label
 
 def getStockList():
     stock_list = open("../data/stock_list.txt").read().splitlines()
-    stock_list = stock_list[0::10]
+    stock_list = stock_list[0::50] 
     return stock_list
 
 def convertDay2Date(day_str):
@@ -449,15 +418,15 @@ def convertDay2Date(day_str):
     return date(t.tm_year,t.tm_mon,t.tm_mday)
 
 def getWorkingDayList():
-    #today = date.today()
+    today = date.today()
     sym = "AAPL"
-    #r = yf.Share(sym)
+    r = yf.Share(sym)
     fname = HISTORIC_DATA_LOC + "/" + sym + '.pkl'
-    #if not os.path.isfile(fname):
-    #    dl = r.get_historical(START_DATE, str(today))
-    #    pickle.dump(dl, open(fname, "wb"))
-    #else:
-    dl = pickle.load(open(fname, "rb"))
+    if not os.path.isfile(fname):
+        dl = r.get_historical(START_DATE, str(today))
+        pickle.dump(dl, open(fname, "wb"))
+    else:
+        dl = pickle.load(open(fname, "rb"))
     date_list = []
     for share in dl:
         date_list.append(share['Date'])

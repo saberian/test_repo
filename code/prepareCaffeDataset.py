@@ -29,7 +29,7 @@ def getCaffeInfoLog(file_name, phr, ind):
     return res
 
 def writeCaffeSolver(prd_name, prt_name, cf_model_dir, n_test_itr, n_max_itr, base_lr):
-    n_itr_snap = int(n_max_itr/5)
+    n_itr_snap = int(n_max_itr/2)
     f = open(protobuf_loc  + '/solver.prototxt', 'w')
     f.write("net: \"%s\"\n" % prt_name)
     f.write("test_iter: %d \n" % n_test_itr)
@@ -38,7 +38,7 @@ def writeCaffeSolver(prd_name, prt_name, cf_model_dir, n_test_itr, n_max_itr, ba
     f.write("lr_policy: \"step\""+"\n")
     f.write("gamma: 0.1"+"\n")
     f.write("stepsize: % d \n" % n_itr_snap)
-    f.write("display:  %d \n" % int(n_itr_snap/20))
+    f.write("display:  %d \n" %  20) #int(n_itr_snap/20)
     f.write("max_iter: %d \n" % n_max_itr)
     f.write("momentum: 0.9"+"\n")
     f.write("weight_decay: 0.0005"+"\n")
@@ -61,14 +61,15 @@ def writeHDF5data(X, y, Xt, yt, train_name, test_name):
     test_filename = os.path.join(dirname, test_name + '.h5') 
     # HDF5DataLayer source should be a file containing a list of HDF5 filenames.
     # To show this off, we'll list the same data file twice.
+    comp_kwargs = {'compression': 'gzip', 'compression_opts': 1}
     with h5py.File(train_filename, 'w') as f:
-        f['data'] = X
-        f['label'] = y.astype(np.float32)
+        f.create_dataset('data', data=X, **comp_kwargs)
+        f.create_dataset('label', data=y.astype(np.float32), **comp_kwargs)
     with open(os.path.join(dirname, train_name + '.txt'), 'w') as f:
         f.write(train_filename + '\n')
         #f.write(train_filename + '\n')    
     # HDF5 is pretty efficient, but can be further compressed.
-    comp_kwargs = {'compression': 'gzip', 'compression_opts': 1}
+    #comp_kwargs = {'compression': 'gzip', 'compression_opts': 1}
     with h5py.File(test_filename, 'w') as f:
         f.create_dataset('data', data=Xt, **comp_kwargs)
         f.create_dataset('label', data=yt.astype(np.float32), **comp_kwargs)
@@ -95,9 +96,9 @@ def prepareData(data_name, dim_no, batch_size, cf_model_dir, pr_type):
         yt = yt * (yt < 4) + 4 * (yt > 4)
 
     # shuffle training data
-    tt = np.random.permutation(X.shape[0])
-    X = X[tt,:]
-    y = y[tt]
+    #tt = np.random.permutation(X.shape[0])
+    #X = X[tt,:]
+    #y = y[tt]
 
     n_batch_train = int(len(y) / batch_size)
     n_used_samples_train = n_batch_train * batch_size
@@ -109,9 +110,9 @@ def prepareData(data_name, dim_no, batch_size, cf_model_dir, pr_type):
     Xt = Xt[0:n_used_samples_test,:]
     yt = yt[0:n_used_samples_test]
     x_mean = np.mean(X, axis=0)
-    pickle.dump(x_mean, open(cf_model_dir + "/x_mean.pkl", "w"))
-    X -= x_mean[np.newaxis,:]
-    Xt -= x_mean[np.newaxis,:]
+    #pickle.dump(x_mean, open(cf_model_dir + "/x_mean.pkl", "w"))
+    #X -= x_mean[np.newaxis,:]
+    #Xt -= x_mean[np.newaxis,:]
     return X, y, Xt, yt
 
 def learn_and_test_LR(X, y, Xt, yt):
@@ -128,23 +129,24 @@ def learn_and_test_LGR(X, y, Xt, yt):
 
 
 caffe_loc = caffe_root + '/.build_release/tools/'
-data_name = 'dataset_eval_2015-04-01'
+data_name = 'dataset_eval_2015-05-04'
 dim_no = 1
 
-prd_name = "caffe_clf_v4_week"
+'''prd_name = "caffe_clf_v3_week"
 prd_type = "clf"
 protobuf_loc = 'caffe_clf_protobuf'
-base_lr = 0.001 
+base_lr = 0.001'''
 
-'''prd_name = "caffe_reg_v1_week"
+
+prd_name = "caffe_reg_v1_week"
 prd_type = "reg"
 protobuf_loc = 'caffe_reg_protobuf'
-base_lr = 0.000001 '''
+base_lr = 0.01 
 
-prt_name = protobuf_loc + "/train_val4.prototxt"
-deploy_file = protobuf_loc + "/deploy4.prototxt"
+prt_name = protobuf_loc + "/train_val1.prototxt"
+deploy_file = protobuf_loc + "/deploy1.prototxt"
 output_node = "fc1"
-batch_size = 100
+batch_size = 1000
 n_max_itr = 10000
 
 
@@ -154,7 +156,7 @@ if not os.path.isdir(MODELS_DIR + "/" + prd_name):
 print "loading and normalizaing data"
 X, y, Xt, yt = prepareData(data_name, dim_no, batch_size, cf_model_dir, prd_type)
 print "writing hdf5 files"
-writeHDF5data(X, y, Xt, yt, 'train_' + prd_type, 'test_' + prd_type)
+#writeHDF5data(X, y, Xt, yt, 'train_' + prd_type, 'test_' + prd_type)
 n_batch_test = len(yt) / batch_size
 print "writting solver file"
 writeCaffeSolver(prd_name, prt_name, cf_model_dir, n_batch_test, n_max_itr, base_lr)
@@ -162,12 +164,18 @@ print "training deep network"
 cmd = caffe_loc + "/caffe.bin train --solver=" + protobuf_loc + "/solver.prototxt"
 os.system(cmd  + " 2>&1 | tee " + cf_model_dir + "/caffe.log")
 
-
+print "testing the model"
 model_file_name = prd_name + "_iter_"+  str(n_max_itr) + ".caffemodel"
 caffe_res = srl.test_caffe(deploy_file, output_node, cf_model_dir, model_file_name, Xt, 0)
 
+caffe_res_1, test_label_1 = srl.testHdf5Caffe(deploy_file, output_node, cf_model_dir, \
+    model_file_name, "test_" + prd_type + ".txt", srl.HDF5_LOC)
+
+
+
 if prd_type == "clf":
     caffe_res = caffe_res[:,1]
+    caffe_res_1 = caffe_res_1[:,1]
     lr_res = learn_and_test_LGR(X, y, Xt, yt)
 if prd_type == "reg":
     lr_res = learn_and_test_LR(X, y, Xt, yt)
@@ -177,12 +185,29 @@ test_label = (yt > (PROFIT_MARGIN-1)) + 0
 
 print caffe_res
 print test_label
+print test_label.shape
 print lr_res
 
 fpr, tpr, thrs = sklearn.metrics.roc_curve(test_label, caffe_res)
 prd_auc = sklearn.metrics.roc_auc_score(test_label, caffe_res)
 prd_mse = sklearn.metrics.mean_squared_error(yt, caffe_res) / 2.0
 plt.plot(fpr, tpr, label=("caffe %.2f, %.8f" % (prd_auc, prd_mse)))
+
+
+print "============="
+print caffe_res_1.shape
+print test_label_1.shape
+print test_label.shape
+print caffe_res_1
+print test_label_1
+
+test_label_1 = (test_label_1 > (PROFIT_MARGIN-1)) + 0
+
+fpr, tpr, thrs = sklearn.metrics.roc_curve(test_label_1, caffe_res_1)
+prd_auc = sklearn.metrics.roc_auc_score(test_label_1, caffe_res_1)
+prd_mse = sklearn.metrics.mean_squared_error(yt, caffe_res) / 2.0
+plt.plot(fpr, tpr, label=("caffe_1 %.2f, %.8f" % (prd_auc, prd_mse)))
+
 
 fpr, tpr, thrs = sklearn.metrics.roc_curve(test_label, lr_res)
 prd_auc = sklearn.metrics.roc_auc_score(test_label, lr_res)

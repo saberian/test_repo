@@ -1,6 +1,6 @@
 name: "RegressionNet"
 input: "data"
-input_dim: 10
+input_dim: 1000
 input_dim: 1
 input_dim: 964
 input_dim: 1
@@ -16,7 +16,7 @@ layer {
     lr_mult: 2
   }
   convolution_param {
-    num_output: 32
+    num_output: 100
     kernel_h: 5
     kernel_w: 1
     weight_filler {

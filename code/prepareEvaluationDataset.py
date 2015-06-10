@@ -14,11 +14,12 @@ print "++++++++++++++++++++++++++++++++++++++++++"
 print "collecting training example"
 
 current_db_day = sys.argv[1]
+n_offset_days = int(sys.argv[2])
 ratio = 0.8
 
 stock_list = srl.getStockList()
 date_list = srl.getWorkingDayList()
-n_labeled_days = len(date_list) - MONTH_DAYS;
+n_labeled_days = len(date_list) - n_offset_days;
 
 sp_ind = int(ratio*n_labeled_days)
 train_start_date = srl.convertDay2Date(date_list[0])
@@ -35,7 +36,7 @@ print "started to collect test examples"
 test_data, test_label = srl.getDatasetFromList(stock_list, \
                                            test_start_date, test_end_date, current_db_day)
 
-
+print "dumping the data"
 pickle.dump([train_data, train_label, test_data, test_label], \
              open(PROCESSED_DATA_DIR + "/dataset_eval_" + current_db_day + ".pkl", "wb"))
 
